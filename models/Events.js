@@ -77,11 +77,7 @@ const eventSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
-  approved: {
-    type: Boolean,
-    index: true,
-    default: false,
-  },
+ 
   bookings: [{ type: mongoose.Types.ObjectId, ref: "Booking" }],
   user: {
     type: mongoose.Types.ObjectId,
@@ -89,6 +85,8 @@ const eventSchema = new mongoose.Schema({
     required: true,
   },
 });
+
+
 eventSchema.index({ geoCoordinates: '2dsphere' });
 
 export default mongoose.model("Events", eventSchema);

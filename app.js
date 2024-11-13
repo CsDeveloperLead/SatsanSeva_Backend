@@ -10,10 +10,13 @@ import cors from "cors";
 import { getEventsByKM, getNearByEvents, searchEvents, suggestEventNames } from "./controllers/event-controller.js";
 import { getCount } from "./controllers/booking-controller.js";
 import adminRouter from "./routes/admin-routes.js";
+import morgan from "morgan";
+import nodemailer from "nodemailer"
 dotenv.config();
 const app = express();
 
 // middlewares
+app.use(morgan("tiny"));
 app.use(cors());
 app.use(express.json());
 app.use("/user", userRouter);
@@ -25,6 +28,38 @@ app.use("/event/nearby", getEventsByKM);
 app.use("/event/suggestions", suggestEventNames);
 app.use("/analytics", getCount);
 app.use("/booking", bookingsRouter);
+
+const transporter = nodemailer.createTransport({
+  host: "smtpout.secureserver.net",
+  port: 465,
+  secure: true,
+  auth: {
+    user: "info@satsangseva.com", // GoDaddy email address
+    pass: "Satsang@Seva",  // Email account password
+  },
+});
+
+// Route to send email
+app.post("/api/send-email", (req, res) => {
+  const { firstName, lastName, email, phone, message } = req.body;
+
+  const mailOptions = {
+    from: email,
+    to: "info@satsangseva.com",
+    subject: `Contact Us Message from ${firstName} ${lastName}`,
+    text: `Name: ${firstName} ${lastName}\nEmail: ${email}\nPhone: ${phone}\nMessage: ${message}`,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error("Error sending email:", error);
+      res.status(500).send("Failed to send message. Please try again later.");
+    } else {
+      console.log("Email sent:", info.response);
+      res.status(200).send("Message sent successfully!");
+    }
+  });
+});
 
 console.log("MONGODB_URL", process.env.MONGODB_URL);
 mongoose.connect(process.env.MONGODB_URL)

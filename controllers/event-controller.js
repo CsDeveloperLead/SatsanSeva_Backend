@@ -5,8 +5,8 @@ import User from "../models/User.js";
 import upload from "../utils/multer.js";
 import cloudinary from "../utils/cloudinary.js";
 import Bookings from "../models/Bookings.js";
-import axios from 'axios';
-import dotenv from 'dotenv';
+import axios from "axios";
+import dotenv from "dotenv";
 dotenv.config();
 
 export const addEvent = async (req, res, next) => {
@@ -29,14 +29,39 @@ export const addEvent = async (req, res, next) => {
 
   upload(req, res, async (err) => {
     if (err) {
-      return res.status(500).json({ message: 'Error in uploading Poster: ', err });
+      return res
+        .status(500)
+        .json({ message: "Error in uploading Poster: ", err });
     } else {
       // create new event
-      const { eventName, eventCategory, eventDesc, eventPrice, eventLang, noOfAttendees, performerName, hostName, hostWhatsapp, sponserName, eventLink, location, eventAddress, geoCoordinates, startDate, endDate } = JSON.parse(req.body.eventData);
-
+      const {
+        eventName,
+        eventCategory,
+        eventDesc,
+        eventPrice,
+        eventLang,
+        noOfAttendees,
+        performerName,
+        hostName,
+        hostWhatsapp,
+        sponserName,
+        eventLink,
+        location,
+        eventAddress,
+        geoCoordinates,
+        startDate,
+        endDate,
+      } = JSON.parse(req.body.eventData);
+      console.log(
+        
+        new Date(startDate),
+        new Date(endDate),
+        adminId
+      );
+      
       const errors = validateEventInputs(JSON.parse(req.body.eventData));
       if (errors) {
-        return res.status(422).json({ message: 'Invalid inputs', errors });
+        return res.status(422).json({ message: "Invalid inputs", errors });
       }
 
       const filesWithIndex = req.files.map((file, index) => ({ file, index }));
@@ -45,7 +70,7 @@ export const addEvent = async (req, res, next) => {
       const eventPosters = await Promise.all(
         filesWithIndex.slice(0, 4).map(async ({ file }) => {
           const result = await cloudinary.uploader.upload(file.path, {
-            folder: 'SatsangSeva',
+            folder: "SatsangSeva",
           });
           return result.secure_url;
         })
@@ -54,13 +79,25 @@ export const addEvent = async (req, res, next) => {
       let event;
       try {
         event = new Events({
-          eventName, eventCategory, eventDesc, eventPrice, eventLang, noOfAttendees, performerName, hostName, hostWhatsapp, sponserName, eventLink, location, eventAddress,
+          eventName,
+          eventCategory,
+          eventDesc,
+          eventPrice,
+          eventLang,
+          noOfAttendees,
+          performerName,
+          hostName,
+          hostWhatsapp,
+          sponserName,
+          eventLink,
+          location,
+          eventAddress,
           geoCoordinates: {
-            type: 'Point',
+            type: "Point",
             coordinates: geoCoordinates,
           },
-          startDate: new Date(`${startDate}Z`),
-          endDate: new Date(`${endDate}Z`),
+          startDate: new Date(`${startDate}`),
+          endDate: new Date(`${endDate}`),
           eventPosters: eventPosters,
           user: adminId,
         });
@@ -105,24 +142,46 @@ export const updateEvent = async (req, res, next) => {
 
   upload(req, res, async (err) => {
     if (err) {
-      return res.status(500).json({ message: 'Error in uploading Poster: ', err });
+      return res
+        .status(500)
+        .json({ message: "Error in uploading Poster: ", err });
     } else {
       // update event
-      const { eventName, eventCategory, eventDesc, eventPrice, eventLang, noOfAttendees, performerName, hostName, hostWhatsapp, sponserName, eventLink, location, eventAddress, geoCoordinates, startDate, endDate } = JSON.parse(req.body.eventData);
+      const {
+        eventName,
+        eventCategory,
+        eventDesc,
+        eventPrice,
+        eventLang,
+        noOfAttendees,
+        performerName,
+        hostName,
+        hostWhatsapp,
+        sponserName,
+        eventLink,
+        location,
+        eventAddress,
+        geoCoordinates,
+        startDate,
+        endDate,
+      } = JSON.parse(req.body.eventData);
 
       const errors = validateEventInputs(JSON.parse(req.body.eventData));
       if (errors) {
-        return res.status(422).json({ message: 'Invalid inputs', errors });
+        return res.status(422).json({ message: "Invalid inputs", errors });
       }
 
       if (req.files && req.files.length > 0) {
-        const filesWithIndex = req.files.map((file, index) => ({ file, index }));
+        const filesWithIndex = req.files.map((file, index) => ({
+          file,
+          index,
+        }));
         filesWithIndex.sort((a, b) => a.index - b.index);
 
         const eventPosters = await Promise.all(
           filesWithIndex.slice(0, 4).map(async ({ file }) => {
             const result = await cloudinary.uploader.upload(file.path, {
-              folder: 'SatsangSeva',
+              folder: "SatsangSeva",
             });
             return result.secure_url;
           })
@@ -146,7 +205,7 @@ export const updateEvent = async (req, res, next) => {
       event.eventAddress = eventAddress;
       if (geoCoordinates) {
         event.geoCoordinates = {
-          type: 'Point',
+          type: "Point",
           coordinates: geoCoordinates,
         };
       }
@@ -178,16 +237,16 @@ export const getNearByEvents = async (req, res, next) => {
           near: location,
           distanceField: "distance",
           spherical: true,
-        }
+        },
       },
       {
         $match: {
           startDate: { $gte: currentDate },
-          approved: true
-        }
+          approved: true,
+        },
       },
       {
-        $sort: { distance: 1 }
+        $sort: { distance: 1 },
       },
       {
         $project: {
@@ -209,11 +268,10 @@ export const getNearByEvents = async (req, res, next) => {
           eventDesc: 1,
           eventPrice: 1,
           eventPosters: 1,
-          approved: 1
-        }
-      }
+          approved: 1,
+        },
+      },
     ]);
-
   } catch (err) {
     return console.log(err);
   }
@@ -234,18 +292,26 @@ export const getEventsByKM = async (req, res, next) => {
     // Construct the origins and destinations for the API request
     const origins = `${location[1]},${location[0]}`;
     const events = await Events.find(); // Add await here
-    const destinations = events.map(item => `${item.geoCoordinates.coordinates[1]},${item.geoCoordinates.coordinates[0]}`).join('|');
+    const destinations = events
+      .map(
+        (item) =>
+          `${item.geoCoordinates.coordinates[1]},${item.geoCoordinates.coordinates[0]}`
+      )
+      .join("|");
 
     // Request to Google Distance Matrix API
-    const response = await axios.get('https://maps.googleapis.com/maps/api/distancematrix/json', {
-      params: {
-        origins,
-        destinations,
-        key: process.env.GMAP_KEY,
-        mode: 'driving', // Add mode parameter
-        units: 'metric' // Add units parameter
+    const response = await axios.get(
+      "https://maps.googleapis.com/maps/api/distancematrix/json",
+      {
+        params: {
+          origins,
+          destinations,
+          key: process.env.GMAP_KEY,
+          mode: "driving", // Add mode parameter
+          units: "metric", // Add units parameter
+        },
       }
-    });
+    );
 
     const results = response.data.rows;
     const eventsWithDistance = events.map((event, index) => {
@@ -257,7 +323,6 @@ export const getEventsByKM = async (req, res, next) => {
         distanceValue: element.distance.value, // meters
         // durationValue: element.duration.value // seconds
       };
-
     });
 
     // Sort events by distance
@@ -265,7 +330,7 @@ export const getEventsByKM = async (req, res, next) => {
 
     return res.status(200).json({ events: eventsWithDistance });
   } catch (error) {
-    console.error('Error fetching distance and time:', error);
+    console.error("Error fetching distance and time:", error);
     next(error); // Pass error to next middleware
   }
 };
@@ -276,7 +341,12 @@ export const getUpComingEvents = async (req, res, next) => {
   try {
     // get Upcoming events SortedByStartDate
     const currentDate = new Date();
-    events = await Events.find({ startDate: { $gte: currentDate }, approved: true }).sort({ startDate: 1 }).populate('bookings', 'noOfAttendee');
+    events = await Events.find({
+      startDate: { $gte: currentDate },
+      approved: true,
+    })
+      .sort({ startDate: 1 })
+      .populate("bookings", "noOfAttendee");
     // // get all events
     // events = await Events.find();
   } catch (err) {
@@ -298,7 +368,9 @@ export const getPastEvents = async (req, res, next) => {
   try {
     // get Upcoming events SortedByStartDate
     const currentDate = new Date();
-    events = await Events.find({ endDate: { $lt: currentDate } }).sort({ endDate: -1 });
+    events = await Events.find({ endDate: { $lt: currentDate } }).sort({
+      endDate: -1,
+    });
     // // get all events
     // events = await Events.find();
   } catch (err) {
@@ -318,7 +390,7 @@ export const getEventById = async (req, res, next) => {
   const id = req.params.id;
   let event;
   try {
-    event = await Events.findById(id).populate('bookings', 'noOfAttendee');
+    event = await Events.findById(id).populate("bookings", "noOfAttendee");
   } catch (err) {
     console.log(err);
     return res.status(404).json({ message: "Invalid Event ID: " + err });
@@ -354,7 +426,9 @@ export const approveEventById = async (req, res, next) => {
     return res.status(500).json({ message: "Error approving event: " + err });
   }
 
-  return res.status(200).json({ message: "Event: '" + event.eventName + "' is Approved." });
+  return res
+    .status(200)
+    .json({ message: "Event: '" + event.eventName + "' is Approved." });
 };
 
 export const rejectEventById = async (req, res, next) => {
@@ -380,7 +454,9 @@ export const rejectEventById = async (req, res, next) => {
     return res.status(500).json({ message: "Error rejecting event: " + err });
   }
 
-  return res.status(200).json({ message: "Event: '" + event.eventName + "' is Rejected." });
+  return res
+    .status(200)
+    .json({ message: "Event: '" + event.eventName + "' is Rejected." });
 };
 
 export const getPendingEvents = async (req, res, next) => {
@@ -389,7 +465,9 @@ export const getPendingEvents = async (req, res, next) => {
     event = await Events.find({ approved: false });
   } catch (err) {
     console.log(err);
-    return res.status(404).json({ message: "Error In Finding Pending Approvals: " + err });
+    return res
+      .status(404)
+      .json({ message: "Error In Finding Pending Approvals: " + err });
   }
 
   if (!event) {
@@ -415,7 +493,7 @@ export const deleteEvent = async (req, res, next) => {
   try {
     await Promise.all(
       event.eventPosters.map(async (posterUrl) => {
-        const publicId = posterUrl.split('/').pop().split('.')[0];
+        const publicId = posterUrl.split("/").pop().split(".")[0];
         await cloudinary.uploader.destroy(publicId);
       })
     );
@@ -441,9 +519,10 @@ export const searchEvents = async (req, res, next) => {
 
   let query = {};
 
-  if (eventName) query.eventName = { $regex: eventName, $options: 'i' };
-  if (hostName) query.hostName = { $regex: hostName, $options: 'i' };
-  if (eventAddress) query.eventAddress = { $regex: eventAddress, $options: 'i' };
+  if (eventName) query.eventName = { $regex: eventName, $options: "i" };
+  if (hostName) query.hostName = { $regex: hostName, $options: "i" };
+  if (eventAddress)
+    query.eventAddress = { $regex: eventAddress, $options: "i" };
   if (startDate) {
     // const startDateParts = startDate.split('-'); // split the date string into year, month, and day
     const startOfDay = new Date(`${startDate} 0:0:0Z`); // specific date at 00:00:00
@@ -451,7 +530,7 @@ export const searchEvents = async (req, res, next) => {
 
     query.startDate = {
       $gte: startOfDay,
-      $lte: endOfDay
+      $lte: endOfDay,
     };
   } else {
     query.startDate = {
@@ -462,7 +541,7 @@ export const searchEvents = async (req, res, next) => {
 
   let events;
   try {
-    events = await Events.find(query).populate('bookings', 'noOfAttendee');
+    events = await Events.find(query).populate("bookings", "noOfAttendee");
   } catch (err) {
     return console.log(err);
   }
@@ -482,11 +561,11 @@ export const suggestEventNames = async (req, res, next) => {
   }
 
   const query = {
-    eventName: { $regex: eventName, $options: 'i' },
+    eventName: { $regex: eventName, $options: "i" },
     startDate: {
       $gte: new Date(),
     },
-    approved: true
+    approved: true,
   };
 
   let suggestions;
@@ -500,7 +579,9 @@ export const suggestEventNames = async (req, res, next) => {
     return res.status(200).json({ suggestions: [] });
   }
 
-  const suggestedEventNames = [...new Set(suggestions.map(suggestion => suggestion.eventName))];
+  const suggestedEventNames = [
+    ...new Set(suggestions.map((suggestion) => suggestion.eventName)),
+  ];
 
   return res.status(200).json({ suggestions: suggestedEventNames });
 };
@@ -509,64 +590,127 @@ export const suggestEventNames = async (req, res, next) => {
 function validateEventInputs(inputs) {
   const errors = {};
 
-  if (!inputs.eventName || typeof inputs.eventName !== 'string' || inputs.eventName.trim() === '') {
-    errors.eventName = 'Event name is required and must be a non-empty string';
+  if (
+    !inputs.eventName ||
+    typeof inputs.eventName !== "string" ||
+    inputs.eventName.trim() === ""
+  ) {
+    errors.eventName = "Event name is required and must be a non-empty string";
   }
 
-  if (!inputs.eventCategory || typeof inputs.eventCategory !== 'string' || inputs.eventCategory.trim() === '') {
-    errors.eventCategory = 'Event category is required and must be a non-empty string';
+  if (
+    !inputs.eventCategory ||
+    typeof inputs.eventCategory !== "string" ||
+    inputs.eventCategory.trim() === ""
+  ) {
+    errors.eventCategory =
+      "Event category is required and must be a non-empty string";
   }
 
-  if (!inputs.eventDesc || typeof inputs.eventDesc !== 'string' || inputs.eventDesc.trim() === '') {
-    errors.eventDesc = 'Event Description is required and must be a non-empty string';
+  if (
+    !inputs.eventDesc ||
+    typeof inputs.eventDesc !== "string" ||
+    inputs.eventDesc.trim() === ""
+  ) {
+    errors.eventDesc =
+      "Event Description is required and must be a non-empty string";
   }
 
-  if (!inputs.eventPrice || typeof inputs.eventPrice !== 'string' || inputs.eventPrice.trim() === '' || parseInt(inputs.eventPrice, 10) < 0) {
-    errors.eventPrice = 'Event Price is required and must be >=0';
+  if (
+    !inputs.eventPrice ||
+    typeof inputs.eventPrice !== "string" ||
+    inputs.eventPrice.trim() === "" ||
+    parseInt(inputs.eventPrice, 10) < 0
+  ) {
+    errors.eventPrice = "Event Price is required and must be >=0";
   }
 
-  if (!inputs.eventLang || typeof inputs.eventLang !== 'string' || inputs.eventLang.trim() === '') {
-    errors.eventLang = 'Event language is required and must be a non-empty string';
+  if (
+    !inputs.eventLang ||
+    typeof inputs.eventLang !== "string" ||
+    inputs.eventLang.trim() === ""
+  ) {
+    errors.eventLang =
+      "Event language is required and must be a non-empty string";
   }
 
-  if (!inputs.noOfAttendees || typeof inputs.noOfAttendees !== 'string') {
-    errors.noOfAttendees = 'Number of attendees is required and must be a positive integer';
+  if (!inputs.noOfAttendees || typeof inputs.noOfAttendees !== "string") {
+    errors.noOfAttendees =
+      "Number of attendees is required and must be a positive integer";
   }
 
-  if (!inputs.performerName || typeof inputs.performerName !== 'string' || inputs.performerName.trim() === '') {
-    errors.performerName = 'Performer name is required and must be a non-empty string';
+  if (
+    !inputs.performerName ||
+    typeof inputs.performerName !== "string" ||
+    inputs.performerName.trim() === ""
+  ) {
+    errors.performerName =
+      "Performer name is required and must be a non-empty string";
   }
 
-  if (!inputs.hostName || typeof inputs.hostName !== 'string' || inputs.hostName.trim() === '') {
-    errors.hostName = 'Host name is required and must be a non-empty string';
+  if (
+    !inputs.hostName ||
+    typeof inputs.hostName !== "string" ||
+    inputs.hostName.trim() === ""
+  ) {
+    errors.hostName = "Host name is required and must be a non-empty string";
   }
 
-  if (!inputs.hostWhatsapp || typeof inputs.hostWhatsapp !== 'string' || inputs.hostWhatsapp.length !== 10) {
-    errors.hostWhatsapp = 'Host WhatsApp number must be of 10 Digits';
+  if (
+    !inputs.hostWhatsapp ||
+    typeof inputs.hostWhatsapp !== "string" ||
+    inputs.hostWhatsapp.length !== 10
+  ) {
+    errors.hostWhatsapp = "Host WhatsApp number must be of 10 Digits";
   }
 
-  if (!inputs.sponserName || typeof inputs.sponserName !== 'string' || inputs.sponserName.trim() === "") {
-    errors.sponserName = 'Sponsor name must be a non-empty string';
+  if (
+    !inputs.sponserName ||
+    typeof inputs.sponserName !== "string" ||
+    inputs.sponserName.trim() === ""
+  ) {
+    errors.sponserName = "Sponsor name must be a non-empty string";
   }
 
-  if (!inputs.eventLink || typeof inputs.eventLink !== 'string' || !/^(https?:\/\/[^\s]+|na)$/i.test(inputs.eventLink.trim())) {
-    errors.eventLink = 'Event link must be a valid URL';
+  if (
+    !inputs.eventLink ||
+    typeof inputs.eventLink !== "string" ||
+    !/^(https?:\/\/[^\s]+|na)$/i.test(inputs.eventLink.trim())
+  ) {
+    errors.eventLink = "Event link must be a valid URL";
   }
 
-  if (!inputs.location || typeof inputs.location !== 'string' || inputs.location.trim() === '') {
-    errors.location = 'Location is required and must be a non-empty string';
+  if (
+    !inputs.location ||
+    typeof inputs.location !== "string" ||
+    inputs.location.trim() === ""
+  ) {
+    errors.location = "Location is required and must be a non-empty string";
   }
 
-  if (!inputs.eventAddress || typeof inputs.eventAddress !== 'string' || inputs.eventAddress.trim() === '') {
-    errors.eventAddress = 'Event address is required and must be a non-empty string';
+  if (
+    !inputs.eventAddress ||
+    typeof inputs.eventAddress !== "string" ||
+    inputs.eventAddress.trim() === ""
+  ) {
+    errors.eventAddress =
+      "Event address is required and must be a non-empty string";
   }
 
-  if (!inputs.startDate || typeof inputs.startDate !== 'string' || isNaN(Date.parse(inputs.startDate))) {
-    errors.startDate = 'Start date is required and must be a valid date';
+  if (
+    !inputs.startDate ||
+    typeof inputs.startDate !== "string" ||
+    isNaN(Date.parse(inputs.startDate))
+  ) {
+    errors.startDate = "Start date is required and must be a valid date";
   }
 
-  if (!inputs.endDate || typeof inputs.endDate !== 'string' || isNaN(Date.parse(inputs.endDate))) {
-    errors.endDate = 'End date is required and must be a valid date';
+  if (
+    !inputs.endDate ||
+    typeof inputs.endDate !== "string" ||
+    isNaN(Date.parse(inputs.endDate))
+  ) {
+    errors.endDate = "End date is required and must be a valid date";
   }
 
   return Object.keys(errors).length > 0 ? errors : null;
