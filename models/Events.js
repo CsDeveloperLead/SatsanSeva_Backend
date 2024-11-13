@@ -77,7 +77,10 @@ const eventSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
- 
+  approved:{
+    type: Boolean,
+    default: false
+  },
   bookings: [{ type: mongoose.Types.ObjectId, ref: "Booking" }],
   user: {
     type: mongoose.Types.ObjectId,
