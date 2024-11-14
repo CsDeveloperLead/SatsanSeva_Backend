@@ -395,6 +395,32 @@ export const getPastEvents = async (req, res, next) => {
   return res.status(200).json({ events: events });
 };
 
+export const getLatestEvents = async (req, res, next) => {
+  let events;
+
+  try {
+    // Get today's date at the start of the day
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0); // Remove the time component to compare dates
+
+    // Get upcoming events where the endDate is greater than or equal to today's date
+    events = await Events.find({ endDate: { $gte: currentDate } }).sort({
+      endDate: 1, // Sort by end date ascending (earliest first)
+    });
+  } catch (err) {
+    return console.log(err);
+  }
+
+  if (!events) {
+    return res.status(500).json({ message: "Request Failed" });
+  }
+  if (events.length === 0) {
+    return res.status(404).json({ message: "No Latest events found" });
+  }
+  return res.status(200).json({ events: events });
+};
+
+
 export const getEventById = async (req, res, next) => {
   const id = req.params.id;
   let event;
