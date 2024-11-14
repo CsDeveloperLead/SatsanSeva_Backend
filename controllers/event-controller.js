@@ -291,7 +291,7 @@ export const getEventsByKM = async (req, res, next) => {
   try {
     // Construct the origins and destinations for the API request
     const origins = `${location[1]},${location[0]}`;
-    const events = await Events.find(); // Add await here
+    const events = await Events.find();
     const destinations = events
       .map(
         (item) =>
@@ -313,15 +313,23 @@ export const getEventsByKM = async (req, res, next) => {
       }
     );
 
+    // Log the response for debugging purposes
+    console.log("Google Distance Matrix API Response:", response.data);
+
     const results = response.data.rows;
     const eventsWithDistance = events.map((event, index) => {
       const element = results[0].elements[index];
+      
+      // Safely check for the presence of distance and duration properties
+      const distanceText = element?.distance?.text || "N/A";
+      const durationText = element?.duration?.text || "N/A";
+      const distanceValue = element?.distance?.value || 0; // default to 0 if undefined
+
       return {
         ...event.toObject(),
-        dist: element.distance.text,
-        time: element.duration.text,
-        distanceValue: element.distance.value, // meters
-        // durationValue: element.duration.value // seconds
+        dist: distanceText,
+        time: durationText,
+        distanceValue: distanceValue, // meters
       };
     });
 
@@ -331,9 +339,10 @@ export const getEventsByKM = async (req, res, next) => {
     return res.status(200).json({ events: eventsWithDistance });
   } catch (error) {
     console.error("Error fetching distance and time:", error);
-    next(error); // Pass error to next middleware
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 
 export const getUpComingEvents = async (req, res, next) => {
   let events;
