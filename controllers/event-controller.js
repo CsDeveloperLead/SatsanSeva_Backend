@@ -442,6 +442,7 @@ export const approveEventById = async (req, res, next) => {
   const id = req.params.id;
   let event;
   try {
+    // Find the event by ID
     event = await Events.findById(id);
   } catch (err) {
     console.log(err);
@@ -452,19 +453,27 @@ export const approveEventById = async (req, res, next) => {
     return res.status(404).json({ message: "Invalid Event ID" });
   }
 
-  event.approved = true; // Approve the event
+  // Mark the event as approved
+  event.approved = true;
+
+  // Set the approval date and time
+  event.approvedAt = new Date();  // Store the current date and time when the event is approved
 
   try {
-    await event.save(); // Save the updated event
+    // Save the updated event with the approval date and time
+    await event.save();
   } catch (err) {
     console.log(err);
     return res.status(500).json({ message: "Error approving event: " + err });
   }
 
-  return res
-    .status(200)
-    .json({ message: "Event: '" + event.eventName + "' is Approved." });
+  // Return a success message
+  return res.status(200).json({
+    message: `Event: '${event.eventName}' is Approved.`,
+    event: event,  // Optionally return the updated event object
+  });
 };
+
 
 export const rejectEventById = async (req, res, next) => {
   const id = req.params.id;

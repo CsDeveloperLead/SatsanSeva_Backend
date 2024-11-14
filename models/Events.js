@@ -81,6 +81,9 @@ const eventSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  approvedAt: {
+    type: Date,
+  },
   bookings: [{ type: mongoose.Types.ObjectId, ref: "Booking" }],
   user: {
     type: mongoose.Types.ObjectId,
