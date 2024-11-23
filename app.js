@@ -7,11 +7,17 @@ import userRouter from "./routes/user-routes.js";
 import eventsRouter from "./routes/events-routes.js";
 import bookingsRouter from "./routes/booking-routes.js";
 import cors from "cors";
-import { getEventsByKM, getNearByEvents, searchEvents, suggestEventNames } from "./controllers/event-controller.js";
+import {
+  getEventsByKM,
+  getNearByEvents,
+  searchEvents,
+  suggestEventNames,
+} from "./controllers/event-controller.js";
 import { getCount } from "./controllers/booking-controller.js";
 import adminRouter from "./routes/admin-routes.js";
 import morgan from "morgan";
-import nodemailer from "nodemailer"
+import nodemailer from "nodemailer";
+import { checkUserExists } from "./controllers/user-controller.js";
 dotenv.config();
 const app = express();
 
@@ -29,13 +35,16 @@ app.use("/event/suggestions", suggestEventNames);
 app.use("/analytics", getCount);
 app.use("/booking", bookingsRouter);
 
+app.get("/checkuser", checkUserExists);
+
+
 const transporter = nodemailer.createTransport({
   host: "smtpout.secureserver.net",
   port: 465,
   secure: true,
   auth: {
     user: "info@satsangseva.com", // GoDaddy email address
-    pass: "Satsang@Seva",  // Email account password
+    pass: "Satsang@Seva", // Email account password
   },
 });
 
@@ -61,11 +70,31 @@ app.post("/api/send-email", (req, res) => {
   });
 });
 
+app.post("/send-whatsapp", async (req, res) => {
+  const { to, message } = req.body;
+
+  try {
+    await client.messages.create({
+      from: `whatsapp:${whatsappNumber}`,
+      to: `whatsapp:${to}`,
+      body: message,
+    });
+    res.status(200).send("WhatsApp message sent successfully.");
+  } catch (error) {
+    res.status(500).send("Failed to send WhatsApp message.");
+  }
+});
+
 console.log("MONGODB_URL", process.env.MONGODB_URL);
-mongoose.connect(process.env.MONGODB_URL)
+mongoose
+  .connect(process.env.MONGODB_URL)
   .then(() =>
     app.listen(process.env.PORT || 8000, () =>
-      console.log(`Connected To Database And Server is running on port ${process.env.PORT || 8000}`)
+      console.log(
+        `Connected To Database And Server is running on port ${
+          process.env.PORT || 8000
+        }`
+      )
     )
   )
   .catch((e) => console.log(e));

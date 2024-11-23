@@ -9,12 +9,15 @@ const userSchema = new Schema({
     type: String,
     required: true,
     unique: true,
+    lowercase: true,
   },
   phoneNumber: {
     type: String,
     required: true,
+    unique: true,
     maxLength: 10,
   },
+  
   password: {
     type: String,
     required: true,
@@ -41,6 +44,10 @@ const userSchema = new Schema({
     type: String,
     default: null
   },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
   social: [{
     type: {
       type: String,
@@ -53,8 +60,10 @@ const userSchema = new Schema({
     {
       type: mongoose.Types.ObjectId,
       ref: "Events",
-    },
+    }
+  
   ],
+
 });
 
 export default mongoose.model("User", userSchema);

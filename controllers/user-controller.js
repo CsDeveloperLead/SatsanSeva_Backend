@@ -19,16 +19,56 @@ export const getAllUsers = async (req, res) => {
   return res.status(200).json({ users });
 };
 
+export const checkUserExists = async (req, res) => {
+  try {
+    const { phoneNumber, email } = req.query; // Access query parameters
+    if (!phoneNumber && !email) {
+      return res
+        .status(400)
+        .json({ message: "Phone number or email is required" });
+    }
+
+    // Check if either phoneNumber or email exists
+    const user = await User.findOne({
+      $or: [{ phoneNumber }, { email }],
+    });
+
+    if (user) {
+      if (user.phoneNumber === phoneNumber) {
+        return res.status(200).json({
+          exists: true,
+          message: "Phone number already exists.",
+        });
+      }
+      if (user.email === email) {
+        return res.status(200).json({
+          exists: true,
+          message: "Email already exists.",
+        });
+      }
+    }
+
+    return res.status(200).json({
+      exists: false,
+      message: "Phone number and email are available.",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Unexpected error occurred." });
+  }
+};
+
 export const singup = async (req, res) => {
   const { name, email, phoneNumber, password, userType } = req.body;
+
   if (
-    !name &&
-    name.trim() === "" &&
-    !email &&
-    email.trim() === "" &&
-    !password &&
-    password.trim() === "" &&
-    !phoneNumber &&
+    !name ||
+    name.trim() === "" ||
+    !email ||
+    email.trim() === "" ||
+    !password ||
+    password.trim() === "" ||
+    !phoneNumber ||
     phoneNumber.trim() === ""
   ) {
     return res.status(422).json({ message: "Invalid Inputs" });
@@ -36,21 +76,47 @@ export const singup = async (req, res) => {
 
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(req.body.email)) {
-    return res.status(422).json({ message: 'Invalid email: ' + email });
+    return res.status(422).json({ message: "Invalid email: " + email });
   }
 
   const hashedPassword = bcrypt.hashSync(password);
   let user;
   try {
-    user = new User({ name, email, phoneNumber, password: hashedPassword, userType });
+    user = new User({
+      name,
+      email,
+      phoneNumber,
+      password: hashedPassword,
+      userType,
+    });
     user = await user.save();
   } catch (err) {
-    return console.log(err);
+    if (err.code === 11000) {
+      // Handle duplicate key error
+      if (err.keyValue.phoneNumber) {
+        return res.status(400).json({
+          message: "Phone number already exists. Use a different one.",
+        });
+      }
+      if (err.keyValue.email) {
+        return res
+          .status(400)
+          .json({ message: "Email already exists. Use a different one." });
+      }
+    }
+    console.log(err);
+    return res.status(500).json({ message: "Unexpected Error Occurred" });
   }
+
   if (!user) {
-    return res.status(500).json({ message: "Unexpected Error Occured" });
+    return res.status(500).json({ message: "Failed to create user" });
   }
-  return res.status(201).json({ id: user._id });
+
+  return res.status(201).json({
+    id: user._id,
+    createdAt: user.createdAt,
+    message: "User created successfully",
+  });
 };
 
 export const updateUser = async (req, res) => {
@@ -102,12 +168,15 @@ export const modifyUser = async (req, res) => {
   try {
     const user = await User.findById(id);
     if (!user) {
-      return res.status(404).json({ message: `User doesn't exist for id: ${id}` });
+      return res
+        .status(404)
+        .json({ message: `User doesn't exist for id: ${id}` });
     }
 
     upload(req, res, async () => {
       const update = {};
-      const { name, phoneNumber, password, desc, location, social } = JSON.parse(req.body.updateUser);
+      const { name, phoneNumber, password, desc, location, social } =
+        JSON.parse(req.body.updateUser);
 
       if (name) update.name = name;
       // if (email) update.email = email;
@@ -121,7 +190,7 @@ export const modifyUser = async (req, res) => {
         try {
           const file = req.files[0];
           const result = await cloudinary.uploader.upload(file.path, {
-            folder: 'SatsangSeva/Users',
+            folder: "SatsangSeva/Users",
           });
           update.profile = result.secure_url;
         } catch (err) {
@@ -175,7 +244,7 @@ export const submitDoc = async (req, res) => {
       try {
         const file = req.files[0];
         const result = await cloudinary.uploader.upload(file.path, {
-          folder: 'SatsangSeva/Users/docs',
+          folder: "SatsangSeva/Users/docs",
           resource_type: "auto",
         });
         update.document = result.secure_url;
@@ -186,7 +255,9 @@ export const submitDoc = async (req, res) => {
     }
 
     try {
-      return res.status(200).json({ message: "Document Updated Successfully!" });
+      return res
+        .status(200)
+        .json({ message: "Document Updated Successfully!" });
     } catch (err) {
       console.log(err);
       return res.status(500).json({ message: err });
@@ -215,7 +286,7 @@ export const login = async (req, res) => {
   }
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   if (!emailRegex.test(req.body.email)) {
-    return res.status(422).json({ message: 'Invalid email: ' + email });
+    return res.status(422).json({ message: "Invalid email: " + email });
   }
   let existingUser;
   try {
@@ -231,7 +302,10 @@ export const login = async (req, res) => {
   }
 
   if (!gAuth || gAuth === false) {
-    const isPasswordCorrect = bcrypt.compareSync(password, existingUser.password);
+    const isPasswordCorrect = bcrypt.compareSync(
+      password,
+      existingUser.password
+    );
 
     if (!isPasswordCorrect) {
       return res.status(400).json({ message: "Incorrect Password" });

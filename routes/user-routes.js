@@ -1,5 +1,5 @@
 import express from "express";
-import { deleteUser, getAllUsers, getBookingsOfUser, getEventsOfUser, getUserById, login, modifyUser, singup, submitDoc, updateUser,
+import { deleteUser, getAllUsers, getBookingsOfUser, getEventsOfUser,checkUserExists, getUserById, login, modifyUser, singup, submitDoc, updateUser,
 } from "../controllers/user-controller.js";
 
 const userRouter = express.Router();
@@ -14,5 +14,7 @@ userRouter.delete("/:id", deleteUser);
 userRouter.post("/login", login);
 userRouter.get("/bookings/:id", getBookingsOfUser);
 userRouter.get("/events/:id", getEventsOfUser);
+
+
 
 export default userRouter;
