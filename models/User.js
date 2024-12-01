@@ -46,7 +46,8 @@ const userSchema = new Schema({
   },
   createdAt: {
     type: Date,
-    default: Date.now,
+    default: () => Date.now(), // Set default only for new users
+    immutable: true, // Prevent updates to this field after creation
   },
   social: [{
     type: {
@@ -67,3 +68,12 @@ const userSchema = new Schema({
 });
 
 export default mongoose.model("User", userSchema);
+
+userSchema.pre("save", function (next) {
+  if (!this.isNew) {
+    // Retain the original `createdAt` value
+    this.createdAt = this.get("createdAt");
+  }
+  next();
+});
+
